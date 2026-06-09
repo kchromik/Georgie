@@ -205,6 +205,8 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
 
 // Lets controls respond to the first click even when the app is inactive,
 // which is the usual state for these non-activating panels.
-private final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
+// Deliberately non-generic: a generic NSHostingView subclass crashes the
+// Swift optimizer (EarlyPerfInliner) in Release builds.
+private final class FirstMouseHostingView: NSHostingView<WidgetContainerView> {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
