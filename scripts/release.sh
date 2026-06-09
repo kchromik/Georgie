@@ -16,7 +16,9 @@ SPARKLE_ACCOUNT="Georgie"                  # generate_keys/sign_update --account
 TEAM_ID="7HFRDKKUCK"
 SIGNING_ID="Developer ID Application: Kevin Chromik (${TEAM_ID})"
 # Override with: NOTARIZE_PROFILE=Foo ./scripts/release.sh
-NOTARIZE_PROFILE="${NOTARIZE_PROFILE:-Georgie-Notarize}"
+# The keychain on this machine has one shared notary profile (created for
+# ShoutFlow, same team) — Georgie 1.0.0 was notarized with it too.
+NOTARIZE_PROFILE="${NOTARIZE_PROFILE:-ShoutFlow-Notarize}"
 
 ARCHIVE_PATH="/tmp/${APP_NAME}.xcarchive"
 EXPORT_PATH="/tmp/${APP_NAME}-export"
