@@ -22,5 +22,27 @@
 &lt;/ul&gt;</description>
       <enclosure url="https://github.com/kchromik/Georgie/releases/download/v1.0.0/Georgie-1.0.0.dmg" length="1595483" type="application/octet-stream" sparkle:edSignature="0VnsFgt8iXZZJvizfCKE2RWp8MBq21jPKlyivZgy1zdQis0P+HawNVHQg8o2EWRMAvUYUiqlrqeiZWHCqc/2Cw==" />
     </item>
+    <item>
+      <title>Version 1.1.0</title>
+      <pubDate>Tue, 09 Jun 2026 21:27:14 +0200</pubDate>
+      <sparkle:version>4</sparkle:version>
+      <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description>&lt;!--
+  Sparkle release notes shown inside the in-app update dialog.
+  Edit this before each release; release.sh embeds it into the appcast item
+  and uses it as the GitHub release body.
+--&gt;
+&lt;h2&gt;What's new&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;b&gt;Window Mirror:&lt;/b&gt; capture any other app window as a live floating widget.&lt;/li&gt;
+  &lt;li&gt;&lt;b&gt;Markdown notes:&lt;/b&gt; the note widget now renders markdown — headings, lists, clickable checklists, quotes, and code blocks.&lt;/li&gt;
+  &lt;li&gt;&lt;b&gt;Web fullscreen, fixed:&lt;/b&gt; video fullscreen (e.g. YouTube) now stays inside the widget instead of taking over the screen.&lt;/li&gt;
+  &lt;li&gt;&lt;b&gt;Edge parking:&lt;/b&gt; shove widgets past the screen edge to tuck them away; snap to edges now applies reliably on drop.&lt;/li&gt;
+  &lt;li&gt;Widgets restored at login can now be closed normally, and closing a web widget reliably stops audio playback.&lt;/li&gt;
+  &lt;li&gt;Removed the Clock/Timer and System Monitor widgets and the camera shape options.&lt;/li&gt;
+&lt;/ul&gt;</description>
+      <enclosure url="https://github.com/kchromik/Georgie/releases/download/v1.1.0/Georgie-1.1.0.dmg" length="1780662" type="application/octet-stream" sparkle:edSignature="o3DqcsWjPlNdBkNarVUlM9or2DK3YpdqG2cCmM9218ccpIMTfKxVEb9SwpijPzNyN0iigm5HvxAbbcaOgSzYBA==" />
+    </item>
   </channel>
 </rss>
