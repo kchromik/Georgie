@@ -20,7 +20,7 @@ struct WidgetContainerView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
         )
-        .onHover { hovering = $0 }
+        .background(HoverTracker { hovering = $0 })
         .onDrop(of: [.fileURL, .image, .url], isTargeted: nil, perform: handleDrop)
     }
 
@@ -33,6 +33,7 @@ struct WidgetContainerView: View {
         case .video:  VideoViewerView(instance: instance)
         case .note:   ScratchpadView(instance: instance, manager: manager)
         case .camera: CameraViewerView(instance: instance)
+        case .windowMirror: WindowMirrorView(instance: instance, manager: manager)
         }
     }
 
@@ -83,5 +84,43 @@ struct WidgetContainerView: View {
         } else {
             manager.newImageFromPasteboardImage(image)
         }
+    }
+}
+
+// SwiftUI's .onHover stops firing while the app is inactive, which is the
+// normal state for these non-activating panels (e.g. right after session
+// restore at login) — the chrome with the close button would never appear.
+// An .activeAlways tracking area delivers hover events regardless.
+private struct HoverTracker: NSViewRepresentable {
+    let onChange: (Bool) -> Void
+
+    func makeNSView(context: Context) -> TrackerView {
+        let view = TrackerView()
+        view.onChange = onChange
+        return view
+    }
+
+    func updateNSView(_ nsView: TrackerView, context: Context) {
+        nsView.onChange = onChange
+    }
+
+    final class TrackerView: NSView {
+        var onChange: ((Bool) -> Void)?
+
+        override func updateTrackingAreas() {
+            super.updateTrackingAreas()
+            trackingAreas.forEach(removeTrackingArea)
+            addTrackingArea(NSTrackingArea(
+                rect: .zero,
+                options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+                owner: self,
+                userInfo: nil
+            ))
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+        override func mouseEntered(with event: NSEvent) { onChange?(true) }
+        override func mouseExited(with event: NSEvent) { onChange?(false) }
     }
 }

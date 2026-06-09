@@ -33,6 +33,11 @@ final class WidgetManager {
     }
 
     @discardableResult
+    func newWindowMirror() -> WidgetInstance {
+        present(WidgetInstance(kind: .windowMirror, settings: settings))
+    }
+
+    @discardableResult
     func open(fileURL: URL) -> WidgetInstance? {
         guard let kind = WidgetKind.forFile(fileURL) else { return nil }
         let instance = WidgetInstance(kind: kind, settings: settings)
@@ -118,8 +123,9 @@ final class WidgetManager {
     func restoreIfEnabled() {
         guard settings.restoreSession else { return }
         guard let data = UserDefaults.standard.data(forKey: sessionKey),
-              let snapshots = try? JSONDecoder().decode([WidgetSnapshot].self, from: data)
+              let wrapped = try? JSONDecoder().decode([FailableSnapshot].self, from: data)
         else { return }
+        let snapshots = wrapped.compactMap(\.value)
 
         for snapshot in snapshots {
             let instance = WidgetInstance(snapshot: snapshot)

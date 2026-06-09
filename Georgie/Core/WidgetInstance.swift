@@ -20,6 +20,17 @@ final class WidgetInstance: Identifiable {
 
     var cameraDeviceID: String?
 
+    var webZoom: Double = 1.0
+    var webReloadInterval: Double = 0
+
+    var cameraMirrored: Bool = false
+
+    var mirrorWindowID: UInt32?
+    var mirrorAppName: String?
+    var mirrorWindowTitle: String?
+
+    var noteRendered: Bool = false
+
     var contentVersion: Int = 0
 
     @ObservationIgnored var fileURL: URL?
@@ -46,6 +57,10 @@ final class WidgetInstance: Identifiable {
         self.urlString = snapshot.urlString
         self.text = snapshot.text
         self.cameraDeviceID = snapshot.cameraDeviceID
+        self.webZoom = snapshot.webZoom ?? 1.0
+        self.webReloadInterval = snapshot.webReloadInterval ?? 0
+        self.cameraMirrored = snapshot.cameraMirrored ?? false
+        self.noteRendered = snapshot.noteRendered ?? false
         self.fileBookmark = snapshot.fileBookmark
         resolveBookmarkIfNeeded()
     }
@@ -85,6 +100,10 @@ final class WidgetInstance: Identifiable {
             urlString: urlString,
             text: text,
             cameraDeviceID: cameraDeviceID,
+            webZoom: webZoom,
+            webReloadInterval: webReloadInterval,
+            cameraMirrored: cameraMirrored,
+            noteRendered: noteRendered,
             fileBookmark: fileBookmark
         )
     }
@@ -95,6 +114,8 @@ final class WidgetInstance: Identifiable {
             return true
         case .pdf, .image, .video:
             return fileBookmark != nil
+        case .windowMirror:
+            return false
         }
     }
 }

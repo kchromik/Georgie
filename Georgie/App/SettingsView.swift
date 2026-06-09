@@ -44,6 +44,16 @@ private struct GeneralSettingsView: View {
             }
 
             Section {
+                Toggle("Snap to screen edges", isOn: $settings.snapToEdges)
+            } header: {
+                Text("Windows")
+            } footer: {
+                Text("Floating windows magnetically align to screen edges and corners while you drag them.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 Toggle("Restore open windows on launch", isOn: $settings.restoreSession)
             } header: {
                 Text("Session")
@@ -52,8 +62,18 @@ private struct GeneralSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            Section {
+                Toggle("Launch Georgie at login", isOn: $settings.launchAtLogin)
+            } header: {
+                Text("Startup")
+            } footer: {
+                Text("Starts Georgie automatically and quietly in the menu bar when you log in.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
-        .frame(height: 320)
+        .frame(height: 460)
     }
 }

@@ -28,13 +28,32 @@ struct CameraViewerView: View {
 
     private var cameraView: some View {
         CameraPreviewRepresentable(deviceID: instance.cameraDeviceID)
+            .scaleEffect(x: instance.cameraMirrored ? -1 : 1, y: 1)
             .overlay(alignment: .bottomLeading) {
-                sourcePicker
-                    .padding(8)
-                    .opacity(hovering ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.15), value: hovering)
+                HStack(spacing: 6) {
+                    sourcePicker
+                    styleMenu
+                }
+                .padding(8)
+                .opacity(hovering ? 1 : 0)
+                .animation(.easeInOut(duration: 0.15), value: hovering)
             }
             .onHover { hovering = $0 }
+    }
+
+    private var styleMenu: some View {
+        Menu {
+            Toggle("Mirror image", isOn: $instance.cameraMirrored)
+        } label: {
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: 12, weight: .medium))
+                .frame(width: 30, height: 24)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Presenter styles")
     }
 
     private var sourcePicker: some View {

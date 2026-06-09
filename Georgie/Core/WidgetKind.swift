@@ -8,39 +8,43 @@ enum WidgetKind: String, Codable, CaseIterable, Identifiable {
     case video
     case note
     case camera
+    case windowMirror
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .web:    return String(localized: "Web")
-        case .pdf:    return String(localized: "PDF")
-        case .image:  return String(localized: "Image")
-        case .video:  return String(localized: "Video")
-        case .note:   return String(localized: "Note")
-        case .camera: return String(localized: "Camera")
+        case .web:          return String(localized: "Web")
+        case .pdf:          return String(localized: "PDF")
+        case .image:        return String(localized: "Image")
+        case .video:        return String(localized: "Video")
+        case .note:         return String(localized: "Note")
+        case .camera:       return String(localized: "Camera")
+        case .windowMirror: return String(localized: "Window")
         }
     }
 
     var symbol: String {
         switch self {
-        case .web:    return "globe"
-        case .pdf:    return "doc.richtext"
-        case .image:  return "photo"
-        case .video:  return "film"
-        case .note:   return "note.text"
-        case .camera: return "camera"
+        case .web:          return "globe"
+        case .pdf:          return "doc.richtext"
+        case .image:        return "photo"
+        case .video:        return "film"
+        case .note:         return "note.text"
+        case .camera:       return "camera"
+        case .windowMirror: return "macwindow.on.rectangle"
         }
     }
 
     var defaultSize: CGSize {
         switch self {
-        case .web:    return CGSize(width: 520, height: 640)
-        case .pdf:    return CGSize(width: 520, height: 680)
-        case .image:  return CGSize(width: 480, height: 360)
-        case .video:  return CGSize(width: 560, height: 340)
-        case .note:   return CGSize(width: 360, height: 320)
-        case .camera: return CGSize(width: 360, height: 270)
+        case .web:          return CGSize(width: 520, height: 640)
+        case .pdf:          return CGSize(width: 520, height: 680)
+        case .image:        return CGSize(width: 480, height: 360)
+        case .video:        return CGSize(width: 560, height: 340)
+        case .note:         return CGSize(width: 360, height: 320)
+        case .camera:       return CGSize(width: 360, height: 270)
+        case .windowMirror: return CGSize(width: 480, height: 320)
         }
     }
 

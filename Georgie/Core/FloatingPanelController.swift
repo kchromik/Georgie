@@ -11,6 +11,9 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     private var clickThroughMonitors: [Any] = []
 
     private let chromeStripHeight: CGFloat = 56
+    private let snapThreshold: CGFloat = 14
+    private var isSnapping = false
+    private var pendingSnapTask: Task<Void, Never>?
 
     init(instance: WidgetInstance, manager: WidgetManager) {
         self.instance = instance
@@ -23,7 +26,7 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
 
         panel.delegate = self
 
-        let host = NSHostingView(
+        let host = FirstMouseHostingView(
             rootView: WidgetContainerView(instance: instance, manager: manager)
         )
         host.autoresizingMask = [.width, .height]
@@ -110,14 +113,75 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        pendingSnapTask?.cancel()
+        pendingSnapTask = nil
         saveFrame()
         removeClickThroughMonitors()
+        // Drop the hosting view immediately so widget content (e.g. a WKWebView
+        // playing audio) is torn down with the panel instead of lingering.
+        panel.contentView = nil
         manager?.handlePanelClosed(instance.id)
     }
 
     func windowDidMove(_ notification: Notification) {
+        // While the user is still dragging, the window server keeps moving the
+        // window with the mouse and stomps any programmatic reposition — so a
+        // snap applied mid-drag never sticks. Defer it to mouse release.
+        if NSEvent.pressedMouseButtons & 1 != 0 {
+            scheduleSnapAfterDrag()
+        } else {
+            snapToEdgesIfNeeded()
+        }
         saveFrame()
         manager?.scheduleAutosave()
+    }
+
+    private func scheduleSnapAfterDrag() {
+        guard pendingSnapTask == nil else { return }
+        pendingSnapTask = Task { [weak self] in
+            while NSEvent.pressedMouseButtons & 1 != 0, !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(40))
+            }
+            guard let self, !Task.isCancelled else { return }
+            self.pendingSnapTask = nil
+            self.snapToEdgesIfNeeded()
+            self.saveFrame()
+            self.manager?.scheduleAutosave()
+        }
+    }
+
+    private func snapToEdgesIfNeeded() {
+        guard !isSnapping else { return }
+        guard manager?.settings.snapToEdges ?? true else { return }
+        guard let visible = (panel.screen ?? NSScreen.main)?.visibleFrame else { return }
+
+        var origin = panel.frame.origin
+        let size = panel.frame.size
+        var moved = false
+
+        // Snap only while approaching an edge from inside the visible frame.
+        // Snapping on the outside too would re-anchor the drag on every move
+        // and make it impossible to shove a panel past the screen edge.
+        let fromLeft = origin.x - visible.minX
+        let fromRight = visible.maxX - (origin.x + size.width)
+        if fromLeft >= 0, fromLeft <= snapThreshold {
+            origin.x = visible.minX; moved = true
+        } else if fromRight >= 0, fromRight <= snapThreshold {
+            origin.x = visible.maxX - size.width; moved = true
+        }
+
+        let fromBottom = origin.y - visible.minY
+        let fromTop = visible.maxY - (origin.y + size.height)
+        if fromBottom >= 0, fromBottom <= snapThreshold {
+            origin.y = visible.minY; moved = true
+        } else if fromTop >= 0, fromTop <= snapThreshold {
+            origin.y = visible.maxY - size.height; moved = true
+        }
+
+        guard moved else { return }
+        isSnapping = true
+        panel.setFrameOrigin(origin)
+        isSnapping = false
     }
 
     func windowDidEndLiveResize(_ notification: Notification) {
@@ -137,4 +201,10 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
         let y = screen.maxY - size.height - 40
         return NSRect(x: x, y: y, width: size.width, height: size.height)
     }
+}
+
+// Lets controls respond to the first click even when the app is inactive,
+// which is the usual state for these non-activating panels.
+private final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }

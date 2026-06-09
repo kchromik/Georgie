@@ -11,6 +11,7 @@ struct AppMenu: View {
         Button("New Web Window") { manager.newWeb() }
         Button("New Note") { manager.newNote() }
         Button("Camera") { manager.newCamera() }
+        Button("Mirror Window") { manager.newWindowMirror() }
 
         Divider()
 
