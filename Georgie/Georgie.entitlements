@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Georgie is distributed outside the Mac App Store with a Developer ID
+	  signature + notarization and the Hardened Runtime enabled. It is NOT
+	  sandboxed (Sparkle auto-updates are far simpler and more reliable that
+	  way). The only resource-access entitlement we need is the camera; web,
+	  PDF, image, video, note and file access all work without the sandbox.
+	-->
+	<key>com.apple.security.device.camera</key>
+	<true/>
+</dict>
+</plist>

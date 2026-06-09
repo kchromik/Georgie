@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# Swift Package Manager
+.swiftpm/
+# NOTE: Package.resolved IS committed to pin the Sparkle version.
+
+# Release artifacts (built into /tmp by scripts/release.sh)
+*.xcarchive
