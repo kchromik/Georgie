@@ -44,5 +44,26 @@
 &lt;/ul&gt;</description>
       <enclosure url="https://github.com/kchromik/Georgie/releases/download/v1.1.0/Georgie-1.1.0.dmg" length="1780662" type="application/octet-stream" sparkle:edSignature="o3DqcsWjPlNdBkNarVUlM9or2DK3YpdqG2cCmM9218ccpIMTfKxVEb9SwpijPzNyN0iigm5HvxAbbcaOgSzYBA==" />
     </item>
+    <item>
+      <title>Version 1.1.1</title>
+      <pubDate>Wed, 10 Jun 2026 09:15:44 +0200</pubDate>
+      <sparkle:version>5</sparkle:version>
+      <sparkle:shortVersionString>1.1.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description>&lt;!--
+  Sparkle release notes shown inside the in-app update dialog.
+  Edit this before each release; release.sh embeds it into the appcast item
+  and uses it as the GitHub release body.
+--&gt;
+&lt;h2&gt;What's new&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;b&gt;Throw widgets like native PiP:&lt;/b&gt; flick a widget toward a screen edge or corner and it glides there, keeping a small margin from the edge.&lt;/li&gt;
+  &lt;li&gt;&lt;b&gt;Edge magnetism reworked:&lt;/b&gt; snapping now applies reliably when you drop a widget near an edge; deliberately shoving it past the edge parks it with a grab handle still visible.&lt;/li&gt;
+  &lt;li&gt;&lt;b&gt;Session restore fixed:&lt;/b&gt; quitting the app no longer wipes the saved widget session; widgets lost offscreen are rescued back into view on restart.&lt;/li&gt;
+  &lt;li&gt;&lt;b&gt;Window Mirror:&lt;/b&gt; the window picker now only lists real application windows — no more Dock, wallpaper, or system overlays.&lt;/li&gt;
+  &lt;li&gt;The video widget no longer offers its own picture-in-picture button.&lt;/li&gt;
+&lt;/ul&gt;</description>
+      <enclosure url="https://github.com/kchromik/Georgie/releases/download/v1.1.1/Georgie-1.1.1.dmg" length="1790961" type="application/octet-stream" sparkle:edSignature="YQRye/r0989XXmetYT5M126ytVU3GXcICosz/Yyqvo40tRoq99q+/ugxui92fYOYhOHbsAXTlcTz6tPLUOK6Aw==" />
+    </item>
   </channel>
 </rss>
