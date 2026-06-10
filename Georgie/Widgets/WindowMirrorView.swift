@@ -202,15 +202,21 @@ final class WindowMirrorService: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     static func loadWindows() async -> [MirrorWindow] {
-        guard let content = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        guard let content = try? await SCShareableContent.excludingDesktopWindows(true, onScreenWindowsOnly: true)
         else { return [] }
         let ownBundle = Bundle.main.bundleIdentifier
         return content.windows
             .filter { window in
-                window.isOnScreen
-                && window.frame.width > 80 && window.frame.height > 80
-                && (window.title?.isEmpty == false)
-                && window.owningApplication?.bundleIdentifier != ownBundle
+                // Only regular document windows of real apps — keeps system UI
+                // like the Dock, wallpaper, and menu bar extras out of the picker.
+                guard window.isOnScreen,
+                      window.windowLayer == 0,
+                      window.frame.width > 80, window.frame.height > 80,
+                      window.title?.isEmpty == false,
+                      let app = window.owningApplication,
+                      app.bundleIdentifier != ownBundle
+                else { return false }
+                return NSRunningApplication(processIdentifier: app.processID)?.activationPolicy == .regular
             }
             .map {
                 MirrorWindow(

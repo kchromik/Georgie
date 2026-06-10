@@ -1,6 +1,18 @@
 import AppKit
 
 final class FloatingPanel: NSPanel {
+    // Fired for every left mouse-down before normal dispatch — the earliest
+    // reliable hook to start drag tracking (windowDidMove arrives too late
+    // and too sporadically during server-side drags).
+    var onLeftMouseDown: (() -> Void)?
+
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .leftMouseDown {
+            onLeftMouseDown?()
+        }
+        super.sendEvent(event)
+    }
+
     init(contentRect: NSRect) {
         super.init(
             contentRect: contentRect,

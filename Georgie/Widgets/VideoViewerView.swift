@@ -25,7 +25,9 @@ private struct VideoPlayerRepresentable: NSViewRepresentable {
     func makeNSView(context: Context) -> AVPlayerView {
         let view = AVPlayerView()
         view.controlsStyle = .floating
-        view.allowsPictureInPicturePlayback = true
+        // The widget itself is the picture-in-picture window; the player
+        // offering system PiP on top of that would just spawn a second player.
+        view.allowsPictureInPicturePlayback = false
         view.videoGravity = .resizeAspect
         load(into: view, coordinator: context.coordinator)
         return view

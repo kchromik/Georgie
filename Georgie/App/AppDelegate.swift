@@ -17,7 +17,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func applicationWillTerminate(_ notification: Notification) {
-        manager.persist()
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        // Persist before AppKit starts closing panels — their close callbacks
+        // would otherwise empty the widget list and overwrite the session.
+        manager.prepareForTermination()
+        return .terminateNow
     }
 }

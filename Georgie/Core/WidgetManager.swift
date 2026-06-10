@@ -10,6 +10,7 @@ final class WidgetManager {
 
     @ObservationIgnored private var controllers: [UUID: FloatingPanelController] = [:]
     @ObservationIgnored private var autosaveTask: Task<Void, Never>?
+    @ObservationIgnored private var isTerminating = false
 
     let settings = SettingsStore()
 
@@ -86,6 +87,9 @@ final class WidgetManager {
     }
 
     func handlePanelClosed(_ id: UUID) {
+        // AppKit closes every panel while the app terminates; treating that as
+        // the user closing widgets would wipe the saved session.
+        guard !isTerminating else { return }
         guard controllers[id] != nil else { return }
         controllers[id] = nil
         widgets.removeAll { $0.id == id }
@@ -109,7 +113,13 @@ final class WidgetManager {
         }
     }
 
+    func prepareForTermination() {
+        persist()
+        isTerminating = true
+    }
+
     func persist() {
+        guard !isTerminating else { return }
         guard settings.restoreSession else {
             UserDefaults.standard.removeObject(forKey: sessionKey)
             return

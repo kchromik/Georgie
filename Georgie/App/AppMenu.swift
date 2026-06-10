@@ -8,8 +8,8 @@ struct AppMenu: View {
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        Button("New Web Window") { manager.newWeb() }
-        Button("New Note") { manager.newNote() }
+        Button("Web Window") { manager.newWeb() }
+        Button("Note") { manager.newNote() }
         Button("Camera") { manager.newCamera() }
         Button("Mirror Window") { manager.newWindowMirror() }
 

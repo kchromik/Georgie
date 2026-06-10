@@ -11,15 +11,21 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
     private var clickThroughMonitors: [Any] = []
 
     private let chromeStripHeight: CGFloat = 56
-    private let snapThreshold: CGFloat = 14
+    private let snapThreshold: CGFloat = 32
+    private let snapBackZone: CGFloat = 48
+    private let minVisibleSliver: CGFloat = 24
+    private let edgePadding: CGFloat = 12
+    private let throwSpeedThreshold: CGFloat = 350
+    private let throwAxisThreshold: CGFloat = 200
     private var isSnapping = false
     private var pendingSnapTask: Task<Void, Never>?
+    private var dragSamples: [(time: TimeInterval, point: NSPoint)] = []
 
     init(instance: WidgetInstance, manager: WidgetManager) {
         self.instance = instance
         self.manager = manager
 
-        let frame = instance.frame ?? Self.defaultFrame(for: instance.kind)
+        let frame = Self.rescuedIfLost(instance.frame ?? Self.defaultFrame(for: instance.kind))
         self.panel = FloatingPanel(contentRect: frame)
 
         super.init()
@@ -31,6 +37,10 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
         )
         host.autoresizingMask = [.width, .height]
         panel.contentView = host
+
+        panel.onLeftMouseDown = { [weak self] in
+            self?.scheduleSnapAfterDrag()
+        }
 
         applyWindowProperties()
         observeInstance()
@@ -129,53 +139,131 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
         // snap applied mid-drag never sticks. Defer it to mouse release.
         if NSEvent.pressedMouseButtons & 1 != 0 {
             scheduleSnapAfterDrag()
-        } else {
+        } else if !isSnapping {
             snapToEdgesIfNeeded()
         }
-        saveFrame()
-        manager?.scheduleAutosave()
+        if !isSnapping {
+            saveFrame()
+            manager?.scheduleAutosave()
+        }
+    }
+
+    // The mouse is sampled directly on a fixed cadence while the button is
+    // held — windowDidMove arrives far too sporadically during server-side
+    // drags to derive a usable release velocity from it.
+    private func recordDragSample() {
+        dragSamples.append((ProcessInfo.processInfo.systemUptime, NSEvent.mouseLocation))
+        if dragSamples.count > 20 {
+            dragSamples.removeFirst(dragSamples.count - 20)
+        }
     }
 
     private func scheduleSnapAfterDrag() {
         guard pendingSnapTask == nil else { return }
+        dragSamples.removeAll()
+        let startOrigin = panel.frame.origin
         pendingSnapTask = Task { [weak self] in
             while NSEvent.pressedMouseButtons & 1 != 0, !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(40))
+                self?.recordDragSample()
+                try? await Task.sleep(for: .milliseconds(8))
             }
             guard let self, !Task.isCancelled else { return }
             self.pendingSnapTask = nil
-            self.snapToEdgesIfNeeded()
+            let velocity = self.releaseVelocity()
+            self.dragSamples.removeAll()
+            // Tracking starts on mouse-down, so plain clicks land here too.
+            guard self.panel.frame.origin != startOrigin else { return }
+            if !self.throwToEdgeIfNeeded(velocity: velocity) {
+                self.snapToEdgesIfNeeded()
+            }
             self.saveFrame()
             self.manager?.scheduleAutosave()
         }
     }
 
+    // Velocity over the final stretch of the drag; a pause before releasing
+    // yields near-zero displacement, so only genuine flicks count as throws.
+    private func releaseVelocity() -> CGVector {
+        guard let lastTime = dragSamples.last?.time else { return .zero }
+        let recent = dragSamples.filter { lastTime - $0.time < 0.12 }
+        guard let first = recent.first, let last = recent.last,
+              last.time - first.time > 0.012
+        else { return .zero }
+        let dt = last.time - first.time
+        return CGVector(
+            dx: (last.point.x - first.point.x) / dt,
+            dy: (last.point.y - first.point.y) / dt
+        )
+    }
+
+    // PiP-style: a flicked panel glides to the edge (or corner, when thrown
+    // diagonally) it was thrown toward.
+    private func throwToEdgeIfNeeded(velocity: CGVector) -> Bool {
+        guard manager?.settings.snapToEdges ?? true else { return false }
+        guard hypot(velocity.dx, velocity.dy) > throwSpeedThreshold else { return false }
+        guard let visible = (panel.screen ?? NSScreen.main)?.visibleFrame else { return false }
+
+        let size = panel.frame.size
+        var target = panel.frame.origin
+        if abs(velocity.dx) > throwAxisThreshold {
+            target.x = velocity.dx > 0 ? visible.maxX - size.width - edgePadding : visible.minX + edgePadding
+        }
+        if abs(velocity.dy) > throwAxisThreshold {
+            target.y = velocity.dy > 0 ? visible.maxY - size.height - edgePadding : visible.minY + edgePadding
+        }
+        guard target != panel.frame.origin else { return false }
+
+        let distance = hypot(target.x - panel.frame.origin.x, target.y - panel.frame.origin.y)
+        isSnapping = true
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = min(0.32, max(0.16, distance / 2200))
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().setFrame(NSRect(origin: target, size: size), display: true)
+        } completionHandler: { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                self.isSnapping = false
+                self.saveFrame()
+                self.manager?.scheduleAutosave()
+            }
+        }
+        return true
+    }
+
+    // Runs after the mouse is released. constrainFrameRect is NOT consulted
+    // during server-side drags, so this is the only reliable place to apply
+    // edge magnetism and the keep-a-sliver-visible parking guard.
     private func snapToEdgesIfNeeded() {
         guard !isSnapping else { return }
-        guard manager?.settings.snapToEdges ?? true else { return }
         guard let visible = (panel.screen ?? NSScreen.main)?.visibleFrame else { return }
 
+        let snapEnabled = manager?.settings.snapToEdges ?? true
         var origin = panel.frame.origin
         let size = panel.frame.size
         var moved = false
 
-        // Snap only while approaching an edge from inside the visible frame.
-        // Snapping on the outside too would re-anchor the drag on every move
-        // and make it impossible to shove a panel past the screen edge.
-        let fromLeft = origin.x - visible.minX
-        let fromRight = visible.maxX - (origin.x + size.width)
-        if fromLeft >= 0, fromLeft <= snapThreshold {
-            origin.x = visible.minX; moved = true
-        } else if fromRight >= 0, fromRight <= snapThreshold {
-            origin.x = visible.maxX - size.width; moved = true
+        // Magnetic band per edge: from `snapBackZone` outside the edge to
+        // `snapThreshold` inside it. Dropped further outside than the band
+        // counts as deliberate parking; then only the minimum visible sliver
+        // is enforced so the panel can always be grabbed again.
+        func resolve(_ position: CGFloat, span: CGFloat, lower: CGFloat, upper: CGFloat) -> CGFloat? {
+            let fromLower = position - lower
+            let fromUpper = upper - (position + span)
+            if snapEnabled, fromLower > -snapBackZone, fromLower <= snapThreshold {
+                return lower + edgePadding
+            }
+            if snapEnabled, fromUpper > -snapBackZone, fromUpper <= snapThreshold {
+                return upper - span - edgePadding
+            }
+            let clamped = min(max(position, lower - span + minVisibleSliver), upper - minVisibleSliver)
+            return clamped == position ? nil : clamped
         }
 
-        let fromBottom = origin.y - visible.minY
-        let fromTop = visible.maxY - (origin.y + size.height)
-        if fromBottom >= 0, fromBottom <= snapThreshold {
-            origin.y = visible.minY; moved = true
-        } else if fromTop >= 0, fromTop <= snapThreshold {
-            origin.y = visible.maxY - size.height; moved = true
+        if let x = resolve(origin.x, span: size.width, lower: visible.minX, upper: visible.maxX) {
+            origin.x = x; moved = true
+        }
+        if let y = resolve(origin.y, span: size.height, lower: visible.minY, upper: visible.maxY) {
+            origin.y = y; moved = true
         }
 
         guard moved else { return }
@@ -200,6 +288,27 @@ final class FloatingPanelController: NSObject, NSWindowDelegate {
         let x = screen.maxX - size.width - 40
         let y = screen.maxY - size.height - 40
         return NSRect(x: x, y: y, width: size.width, height: size.height)
+    }
+
+    // A saved frame can end up (almost) fully offscreen — e.g. dragged out by
+    // accident or a display was unplugged. Deliberately parked panels keep at
+    // least the 24pt sliver, so anything below 20pt visible counts as lost
+    // and gets recentered on the main screen.
+    private static func rescuedIfLost(_ frame: NSRect) -> NSRect {
+        let minVisible: CGFloat = 20
+        for screen in NSScreen.screens {
+            let overlap = frame.intersection(screen.visibleFrame)
+            if overlap.width >= minVisible, overlap.height >= minVisible {
+                return frame
+            }
+        }
+        guard let visible = NSScreen.main?.visibleFrame else { return frame }
+        return NSRect(
+            x: visible.midX - frame.width / 2,
+            y: visible.midY - frame.height / 2,
+            width: frame.width,
+            height: frame.height
+        )
     }
 }
 
