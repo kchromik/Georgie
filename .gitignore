@@ -13,3 +13,6 @@ xcuserdata/
 
 # Release artifacts (built into /tmp by scripts/release.sh)
 *.xcarchive
+
+# Claude Code
+CLAUDE.md
